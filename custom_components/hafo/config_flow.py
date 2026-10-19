@@ -24,6 +24,7 @@ from .const import (
     FORECAST_TYPE_HISTORICAL_SHIFT,
     FORECAST_TYPE_MULTIWEEK_AVERAGE,
 )
+from .forecasters.multiweek_profile import MIN_SAMPLES
 
 
 def _forecast_type_selector() -> selector.Selector[selector.SelectSelectorConfig]:
@@ -70,6 +71,34 @@ def _multiweek_schema(settings: Mapping[str, Any]) -> vol.Schema:
             ),
         }
     )
+
+
+def _multiweek_errors(settings: Mapping[str, Any]) -> dict[str, str]:
+    """Reject settings that the number selector's step does not enforce."""
+    errors: dict[str, str] = {}
+    whole_numbers: dict[str, int] = {}
+    for field, default in (
+        (CONF_HISTORY_WEEKS, DEFAULT_HISTORY_WEEKS),
+        (CONF_FORECAST_DAYS, DEFAULT_FORECAST_DAYS),
+    ):
+        raw = settings.get(field, default)
+        try:
+            number = float(raw)
+        except (TypeError, ValueError, OverflowError):
+            errors[field] = "whole_number"
+            continue
+        if isinstance(raw, bool) or not number.is_integer():
+            errors[field] = "whole_number"
+        else:
+            whole_numbers[field] = int(number)
+
+    if (
+        CONF_HISTORY_WEEKS in whole_numbers
+        and whole_numbers[CONF_HISTORY_WEEKS] < MIN_SAMPLES
+        and settings.get(CONF_DAY_GROUPING, DEFAULT_DAY_GROUPING) == "weekday"
+    ):
+        errors[CONF_HISTORY_WEEKS] = "weekday_history_too_short"
+    return errors
 
 
 class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -158,12 +187,13 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
         """Configure the multiweek method without changing the legacy helper."""
         if not self._multiweek_data:
             return self.async_abort(reason="source_missing")
-        if user_input is not None:
+        errors = _multiweek_errors(user_input) if user_input is not None else {}
+        if user_input is not None and not errors:
             return self.async_create_entry(
                 title=self._multiweek_title,
                 data={**self._multiweek_data, **user_input},
             )
-        return self.async_show_form(step_id="multiweek", data_schema=_multiweek_schema({}))
+        return self.async_show_form(step_id="multiweek", data_schema=_multiweek_schema(user_input or {}), errors=errors)
 
 
 class HafoOptionsFlow(OptionsFlow):
@@ -182,6 +212,7 @@ class HafoOptionsFlow(OptionsFlow):
             return self.async_abort(reason="entry_not_found")
 
         settings = {**entry.data, **entry.options}
+        errors: dict[str, str] = {}
         forecast_type = self._pending_forecast_type or settings.get(CONF_FORECAST_TYPE, DEFAULT_FORECAST_TYPE)
         if user_input is not None:
             selected_type = user_input.get(CONF_FORECAST_TYPE, forecast_type)
@@ -189,16 +220,20 @@ class HafoOptionsFlow(OptionsFlow):
                 # Show the selected strategy's settings before saving or reloading.
                 self._pending_forecast_type = forecast_type = selected_type
             else:
-                options = {**entry.options, **user_input}
-                if self._pending_forecast_type is not None:
-                    options[CONF_FORECAST_TYPE] = self._pending_forecast_type
-                return self.async_create_entry(title="", data=options)
+                settings.update(user_input)
+                if forecast_type == FORECAST_TYPE_MULTIWEEK_AVERAGE:
+                    errors = _multiweek_errors(settings)
+                if not errors:
+                    options = {**entry.options, **user_input}
+                    if self._pending_forecast_type is not None:
+                        options[CONF_FORECAST_TYPE] = self._pending_forecast_type
+                    return self.async_create_entry(title="", data=options)
 
         if forecast_type == FORECAST_TYPE_MULTIWEEK_AVERAGE:
             schema = _multiweek_schema(settings).extend(
                 {vol.Optional(CONF_FORECAST_TYPE, default=forecast_type): _forecast_type_selector()}
             )
-            return self.async_show_form(step_id="init", data_schema=schema)
+            return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
 
         # Read from options first (previously saved), fall back to data (initial config)
         current_history_days = entry.options.get(

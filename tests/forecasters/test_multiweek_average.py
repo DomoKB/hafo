@@ -59,8 +59,17 @@ def test_exact_weekday_option_excludes_other_weekdays() -> None:
         row("2026-09-21", 12, 16),
         row("2026-09-22", 12, 100),
     ]
-    result = dict(average_history_to_forecast(history, now=NOW, day_grouping="weekday"))
+    result = dict(average_history_to_forecast(history, now=NOW, history_weeks=3, day_grouping="weekday"))
     assert result[NOW.replace(hour=12)] == 14
+
+
+def test_two_week_weekday_weekend_profile_still_covers_both_forecast_weeks() -> None:
+    """Two weeks remain supported when comparable weekdays/weekends are pooled."""
+    result = average_history_to_forecast(full_history(NOW), now=NOW, history_weeks=2, forecast_days=14)
+    end = (NOW + timedelta(days=14)).astimezone(UTC)
+    assert len(result) == (end - NOW.astimezone(UTC)) / HOUR
+    assert result[-1][0].astimezone(UTC) == end - HOUR
+    assert all(value == 2 for _, value in result)
 
 
 def test_future_and_recent_unpublished_rows_cannot_change_a_forecast() -> None:
@@ -140,6 +149,7 @@ def test_partial_hour_forecast_starts_at_current_hour_without_reading_current_lo
         {"history_weeks": 13},
         {"history_weeks": True},
         {"history_weeks": 2.5},
+        {"history_weeks": 2, "day_grouping": "weekday"},
         {"forecast_days": 0},
         {"day_grouping": "invalid"},
     ],

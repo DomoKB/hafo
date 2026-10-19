@@ -51,6 +51,7 @@ def average_history_to_forecast(
         or type(forecast_days) is not int
         or not 1 <= forecast_days <= MAX_FORECAST_DAYS
         or day_grouping not in GROUPINGS
+        or (day_grouping == "weekday" and history_weeks < MIN_SAMPLES)
     ):
         msg = "Invalid multiweek forecast settings"
         raise ValueError(msg)

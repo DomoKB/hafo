@@ -6,9 +6,12 @@ Assistant recorder hourly means and does not require HAEO.
 
 Create a Forecast helper, choose **Multiweek Average**, and select:
 
-- **History to average:** 2–12 weeks; default 4.
-- **Forecast horizon:** 1–14 days; default 7.
-- **Day pattern:** weekdays/weekends together (default), or each weekday separately.
+- **History to average:** 2–12 whole weeks; default 4.
+- **Forecast horizon:** 1–14 whole days; default 7.
+- **Day pattern:** weekdays/weekends together (default), or each weekday separately
+    (requires at least 3 weeks).
+
+Settings are checked before saving. Invalid edits leave the working helper unchanged.
 
 A separate helper can coexist with Historical Shift for the same source entity.
 The original helper keeps its existing identity, settings and forecast. Changing

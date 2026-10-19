@@ -21,13 +21,17 @@
           "history_weeks": "History to average"
         },
         "data_description": {
-          "day_grouping": "Group working days and weekends together, or learn each weekday separately.",
+          "day_grouping": "Group working days and weekends together, or learn each weekday separately (requires at least 3 weeks).",
           "forecast_days": "How many days ahead to forecast.",
           "history_weeks": "Use completed hourly observations from the preceding 2–12 weeks."
         }
       }
     },
-    "error": { "entity_not_found": "The selected entity was not found" },
+    "error": {
+      "entity_not_found": "The selected entity was not found",
+      "weekday_history_too_short": "Use at least 3 weeks when learning each weekday separately.",
+      "whole_number": "Enter a whole number."
+    },
     "abort": {
       "already_configured": "A forecast helper for this entity already exists",
       "source_missing": "Select a source entity first"
@@ -46,13 +50,17 @@
           "history_weeks": "History to average"
         },
         "data_description": {
-          "day_grouping": "Group working days and weekends together, or learn each weekday separately.",
+          "day_grouping": "Group working days and weekends together, or learn each weekday separately (requires at least 3 weeks).",
           "forecast_days": "How many days ahead to forecast.",
           "forecast_type": "Choose Historical Shift or Multiweek Average for this helper.",
           "history_days": "Number of days of history to fetch and shift forward (1-30)",
           "history_weeks": "Use completed hourly observations from the preceding 2–12 weeks."
         }
       }
+    },
+    "error": {
+      "weekday_history_too_short": "Use at least 3 weeks when learning each weekday separately.",
+      "whole_number": "Enter a whole number."
     }
   },
   "entity": { "sensor": { "forecast": { "name": "Forecast" } } }

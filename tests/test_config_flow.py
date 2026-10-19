@@ -1,5 +1,6 @@
 """Tests for the HAFO config flow."""
 
+from typing import Any
 from unittest.mock import patch
 
 from homeassistant.core import HomeAssistant
@@ -230,6 +231,148 @@ async def test_multiweek_options_preserve_method_and_source(hass: HomeAssistant)
     assert entry.data[CONF_SOURCE_ENTITY] == "sensor.test_power"
 
 
+@pytest.mark.parametrize(
+    ("changes", "errors"),
+    [
+        ({"history_weeks": 2.5}, {"history_weeks": "whole_number"}),
+        ({"forecast_days": 7.5}, {"forecast_days": "whole_number"}),
+        (
+            {"history_weeks": 2.5, "forecast_days": 7.5},
+            {"history_weeks": "whole_number", "forecast_days": "whole_number"},
+        ),
+        (
+            {"history_weeks": 2, "day_grouping": "weekday"},
+            {"history_weeks": "weekday_history_too_short"},
+        ),
+    ],
+)
+async def test_multiweek_creation_rejects_invalid_settings_before_saving(
+    hass: HomeAssistant, config_flow: HafoConfigFlow, changes: dict[str, Any], errors: dict[str, str]
+) -> None:
+    """Validate actual selector output and keep invalid fields available to correct."""
+    hass.states.async_set("sensor.test_power", "1")
+    with (
+        patch.object(config_flow, "async_set_unique_id", return_value=None),
+        patch.object(config_flow, "_abort_if_unique_id_configured", return_value=None),
+    ):
+        form = await config_flow.async_step_user(
+            {CONF_SOURCE_ENTITY: "sensor.test_power", CONF_FORECAST_TYPE: "multiweek_average"}
+        )
+    schema = form.get("data_schema")
+    assert schema is not None
+    valid = {"history_weeks": 4.0, "forecast_days": 7.0, "day_grouping": "weekday_weekend"}
+    # HA NumberSelector accepts fractions even though its step is 1.
+    submitted = schema({**valid, **changes})
+    result = await config_flow.async_step_multiweek(submitted)
+    assert result.get("type") == FlowResultType.FORM
+    assert result.get("errors") == errors
+    retry_schema = result.get("data_schema")
+    assert retry_schema is not None
+    assert retry_schema({}) == submitted
+
+    saved = await config_flow.async_step_multiweek(retry_schema(valid))
+    assert saved.get("type") == FlowResultType.CREATE_ENTRY
+    data = saved.get("data")
+    assert data is not None
+    forecaster = create_forecaster(hass, MockConfigEntry(domain=DOMAIN, data=data))
+    assert forecaster.history_days == 28
+
+
+@pytest.mark.parametrize(
+    ("changes", "errors"),
+    [
+        ({"history_weeks": 2.5}, {"history_weeks": "whole_number"}),
+        ({"forecast_days": 7.5}, {"forecast_days": "whole_number"}),
+        (
+            {"history_weeks": 2.5, "forecast_days": 7.5},
+            {"history_weeks": "whole_number", "forecast_days": "whole_number"},
+        ),
+        (
+            {"history_weeks": 2, "day_grouping": "weekday"},
+            {"history_weeks": "weekday_history_too_short"},
+        ),
+    ],
+)
+async def test_multiweek_options_reject_invalid_settings_without_changing_working_helper(
+    hass: HomeAssistant, changes: dict[str, Any], errors: dict[str, str]
+) -> None:
+    """An invalid edit cannot replace the last working options or helper identity."""
+    valid = {"history_weeks": 4.0, "forecast_days": 7.0, "day_grouping": "weekday_weekend"}
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="hafo_sensor.test_power",
+        data={CONF_SOURCE_ENTITY: "sensor.test_power", CONF_FORECAST_TYPE: "multiweek_average"},
+        options=valid,
+    )
+    entry.add_to_hass(hass)
+    flow = HafoOptionsFlow()
+    flow.hass = hass
+    flow.handler = entry.entry_id
+    form = await flow.async_step_init()
+    schema = form.get("data_schema")
+    assert schema is not None
+    submitted = schema({**valid, **changes})
+    result = await flow.async_step_init(submitted)
+    assert result.get("type") == FlowResultType.FORM
+    assert result.get("errors") == errors
+    retry_schema = result.get("data_schema")
+    assert retry_schema is not None
+    assert retry_schema({}) == submitted
+    assert entry.options == valid
+    assert entry.unique_id == "hafo_sensor.test_power"
+    assert entry.data[CONF_SOURCE_ENTITY] == "sensor.test_power"
+    assert create_forecaster(hass, entry).history_days == 28
+
+    saved = await flow.async_step_init(retry_schema(valid))
+    assert saved.get("type") == FlowResultType.CREATE_ENTRY
+    options = saved.get("data")
+    assert options is not None
+    hass.config_entries.async_update_entry(entry, options=options)
+    assert create_forecaster(hass, entry).history_days == 28
+
+
+async def test_multiweek_options_validate_grouping_against_saved_history(hass: HomeAssistant) -> None:
+    """A grouping-only edit must consider the existing two-week setting."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_SOURCE_ENTITY: "sensor.test_power", CONF_FORECAST_TYPE: "multiweek_average"},
+        options={"history_weeks": 2.0, "forecast_days": 7.0, "day_grouping": "weekday_weekend"},
+    )
+    entry.add_to_hass(hass)
+    flow = HafoOptionsFlow()
+    flow.hass = hass
+    flow.handler = entry.entry_id
+    result = await flow.async_step_init({"day_grouping": "weekday"})
+    assert result.get("type") == FlowResultType.FORM
+    assert result.get("errors") == {"history_weeks": "weekday_history_too_short"}
+    assert entry.options["day_grouping"] == "weekday_weekend"
+
+
+@pytest.mark.parametrize(
+    "settings",
+    [
+        {"history_weeks": 2.0, "forecast_days": 14.0, "day_grouping": "weekday_weekend"},
+        {"history_weeks": 3.0, "forecast_days": 14.0, "day_grouping": "weekday"},
+    ],
+)
+async def test_multiweek_options_accept_valid_boundary_settings(hass: HomeAssistant, settings: dict[str, Any]) -> None:
+    """Whole-valued selector floats and valid grouping minimums still save."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_SOURCE_ENTITY: "sensor.test_power", CONF_FORECAST_TYPE: "multiweek_average"},
+    )
+    entry.add_to_hass(hass)
+    flow = HafoOptionsFlow()
+    flow.hass = hass
+    flow.handler = entry.entry_id
+    form = await flow.async_step_init()
+    schema = form.get("data_schema")
+    assert schema is not None
+    result = await flow.async_step_init(schema(settings))
+    assert result.get("type") == FlowResultType.CREATE_ENTRY
+    assert result.get("data") == {**settings, CONF_FORECAST_TYPE: "multiweek_average"}
+
+
 async def test_multiweek_step_requires_selected_source(config_flow: HafoConfigFlow) -> None:
     """An out-of-order flow has no source and cannot create a broken helper."""
     result = await config_flow.async_step_multiweek()
@@ -260,6 +403,11 @@ async def test_existing_helper_can_switch_strategy_without_changing_identity(has
     assert pending_schema is not None
     assert "history_weeks" in pending_schema.schema
     assert entry.options == {CONF_HISTORY_DAYS: 14}
+    invalid = await flow.async_step_init({"history_weeks": 2.0, "forecast_days": 7.0, "day_grouping": "weekday"})
+    assert invalid.get("type") == FlowResultType.FORM
+    assert invalid.get("errors") == {"history_weeks": "weekday_history_too_short"}
+    assert entry.options == {CONF_HISTORY_DAYS: 14}
+    assert type(create_forecaster(hass, entry)).__name__ == "HistoricalShiftForecaster"
     settings = {"history_weeks": 4, "forecast_days": 7, "day_grouping": "weekday_weekend"}
     saved = await flow.async_step_init(settings)
     assert saved.get("type") == FlowResultType.CREATE_ENTRY
