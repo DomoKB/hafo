@@ -83,7 +83,12 @@ Best for data with repeating patterns (daily, weekly cycles).
 - Fetches hourly statistics from the recorder
 - Shifts data forward by configurable number of days
 
-_More forecasting engines coming soon!_
+### Multiweek Average
+
+Averages comparable local hours across several weeks, grouped by weekdays/weekends
+or by individual weekday. The new helper can coexist with Historical Shift.
+Incomplete/missing history remains explicit, and DST hours retain real durations.
+See [the method and evaluation notes](docs/user-guide/forecasters/multiweek-average.md).
 
 ## 🎯 How It Works
 

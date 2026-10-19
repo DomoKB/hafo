@@ -31,3 +31,9 @@ All forecasters in HAFO follow a similar pattern:
 4. **Output**: Provide forecast as sensor attributes
 
 The forecast is refreshed hourly to incorporate new data.
+
+## Multiweek Average
+
+[Multiweek Average](multiweek-average.md) estimates a typical hourly profile from
+several weeks of comparable days. It can run alongside Historical Shift for the
+same source, allowing their accuracy to be compared without changing consumers.

@@ -180,3 +180,57 @@ async def test_forecaster_uses_updated_options(hass: HomeAssistant) -> None:
         f"Expected history_days=14 from options, got {forecaster.history_days}. "
         "Forecaster is not reading from entry.options."
     )
+
+
+async def test_multiweek_flow_creates_separate_helper(hass: HomeAssistant, config_flow: HafoConfigFlow) -> None:
+    """Multiweek settings have their own step and cannot replace the legacy helper."""
+    hass.states.async_set("sensor.test_power", "1", {"friendly_name": "Test Power"})
+    with (
+        patch.object(config_flow, "async_set_unique_id", return_value=None) as set_id,
+        patch.object(config_flow, "_abort_if_unique_id_configured", return_value=None),
+    ):
+        first = await config_flow.async_step_user(
+            {CONF_SOURCE_ENTITY: "sensor.test_power", CONF_FORECAST_TYPE: "multiweek_average"}
+        )
+    assert first.get("step_id") == "multiweek"
+    set_id.assert_awaited_once_with("hafo_sensor.test_power_multiweek_average")
+    result = await config_flow.async_step_multiweek(
+        {"history_weeks": 4, "forecast_days": 7, "day_grouping": "weekday_weekend"}
+    )
+    assert result.get("type") == FlowResultType.CREATE_ENTRY
+    assert result.get("title") == "Test Power Multiweek Average"
+    assert result.get("data") == {
+        CONF_SOURCE_ENTITY: "sensor.test_power",
+        CONF_FORECAST_TYPE: "multiweek_average",
+        "history_weeks": 4,
+        "forecast_days": 7,
+        "day_grouping": "weekday_weekend",
+    }
+
+
+async def test_multiweek_options_preserve_method_and_source(hass: HomeAssistant) -> None:
+    """Editing multiweek options keeps the helper identity/source unchanged."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Average",
+        data={
+            CONF_SOURCE_ENTITY: "sensor.test_power",
+            CONF_FORECAST_TYPE: "multiweek_average",
+            "history_weeks": 4,
+        },
+    )
+    entry.add_to_hass(hass)
+    flow = HafoOptionsFlow()
+    flow.hass = hass
+    flow.handler = entry.entry_id
+    form = await flow.async_step_init()
+    assert form.get("type") == FlowResultType.FORM
+    result = await flow.async_step_init({"history_weeks": 6, "forecast_days": 2, "day_grouping": "weekday"})
+    assert result.get("data") == {"history_weeks": 6, "forecast_days": 2, "day_grouping": "weekday"}
+    assert entry.data[CONF_SOURCE_ENTITY] == "sensor.test_power"
+
+
+async def test_multiweek_step_requires_selected_source(config_flow: HafoConfigFlow) -> None:
+    """An out-of-order flow has no source and cannot create a broken helper."""
+    result = await config_flow.async_step_multiweek()
+    assert result.get("reason") == "source_missing"

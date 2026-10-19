@@ -63,3 +63,13 @@ To add a new forecasting algorithm:
 - **New Forecasters**: Add coordinator classes in `forecasters/` and register in `FORECASTER_TYPES`
 - **New Sensors**: Add sensor types in `sensor.py`
 - **Data Sources**: Each forecaster can fetch from different sources (recorder, APIs, etc.)
+
+## Multiweek Average
+
+`MultiweekAverageForecaster` reuses the existing coordinator lifecycle, source
+metadata and forecast result contract. Its recorder-independent arithmetic is in
+`multiweek_profile.py`. Grouping and fallback use local calendar hours; forecast
+iteration uses UTC so DST represents real elapsed hours. The new creation-flow
+step has an algorithm-specific unique ID, preserving legacy helpers for the same
+source. Options alter lookback/grouping/horizon while keeping helper identity.
+The offline evaluator calls the production functions for both methods.

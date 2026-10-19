@@ -4,27 +4,66 @@
     "step": {
       "user": {
         "title": "Create Forecast Helper",
-        "description": "Create a forecast sensor that shifts historical data forward to predict future values.",
-        "data": { "forecast_type": "Forecast type", "history_days": "History days", "source_entity": "Source entity" },
+        "description": "Create a forecast sensor from recorded history. Multiweek Average opens its own settings next.",
+        "data": {
+          "forecast_type": "Forecast type",
+          "history_days": "History days",
+          "source_entity": "Source entity"
+        },
         "data_description": {
           "forecast_type": "The forecasting algorithm to use",
           "history_days": "Number of days of history to fetch and shift forward (1-30)",
           "source_entity": "The sensor entity to generate a forecast for"
         }
+      },
+      "multiweek": {
+        "title": "Configure Multiweek Average",
+        "description": "Average comparable hours over several weeks. Fewer than three comparable days fall back to last week when available.",
+        "data": {
+          "history_weeks": "History to average",
+          "forecast_days": "Forecast horizon",
+          "day_grouping": "Day pattern"
+        },
+        "data_description": {
+          "history_weeks": "Use completed hourly observations from the preceding 2–12 weeks.",
+          "forecast_days": "How many days ahead to forecast.",
+          "day_grouping": "Group working days and weekends together, or learn each weekday separately."
+        }
       }
     },
-    "error": { "entity_not_found": "The selected entity was not found" },
-    "abort": { "already_configured": "A forecast helper for this entity already exists" }
+    "error": {
+      "entity_not_found": "The selected entity was not found"
+    },
+    "abort": {
+      "already_configured": "A forecast helper for this entity already exists",
+      "source_missing": "Select a source entity first"
+    }
   },
   "options": {
     "step": {
       "init": {
         "title": "Configure Forecast Helper",
         "description": "Adjust the forecast settings",
-        "data": { "history_days": "History days" },
-        "data_description": { "history_days": "Number of days of history to fetch and shift forward (1-30)" }
+        "data": {
+          "history_days": "History days",
+          "history_weeks": "History to average",
+          "forecast_days": "Forecast horizon",
+          "day_grouping": "Day pattern"
+        },
+        "data_description": {
+          "history_days": "Number of days of history to fetch and shift forward (1-30)",
+          "history_weeks": "Use completed hourly observations from the preceding 2–12 weeks.",
+          "forecast_days": "How many days ahead to forecast.",
+          "day_grouping": "Group working days and weekends together, or learn each weekday separately."
+        }
       }
     }
   },
-  "entity": { "sensor": { "forecast": { "name": "Forecast" } } }
+  "entity": {
+    "sensor": {
+      "forecast": {
+        "name": "Forecast"
+      }
+    }
+  }
 }

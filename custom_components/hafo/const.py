@@ -8,6 +8,9 @@ DOMAIN: Final = "hafo"
 CONF_SOURCE_ENTITY: Final = "source_entity"
 CONF_HISTORY_DAYS: Final = "history_days"
 CONF_FORECAST_TYPE: Final = "forecast_type"
+CONF_HISTORY_WEEKS: Final = "history_weeks"
+CONF_FORECAST_DAYS: Final = "forecast_days"
+CONF_DAY_GROUPING: Final = "day_grouping"
 
 # Source entity attributes (persisted to survive restarts)
 CONF_SOURCE_UNIT: Final = "source_unit_of_measurement"
@@ -15,9 +18,13 @@ CONF_SOURCE_DEVICE_CLASS: Final = "source_device_class"
 
 # Forecast types
 FORECAST_TYPE_HISTORICAL_SHIFT: Final = "historical_shift"
+FORECAST_TYPE_MULTIWEEK_AVERAGE: Final = "multiweek_average"
 
 # Default values
 DEFAULT_HISTORY_DAYS: Final = 7
+DEFAULT_HISTORY_WEEKS: Final = 4
+DEFAULT_FORECAST_DAYS: Final = 7
+DEFAULT_DAY_GROUPING: Final = "weekday_weekend"
 DEFAULT_FORECAST_TYPE: Final = FORECAST_TYPE_HISTORICAL_SHIFT
 
 # Attribute keys
