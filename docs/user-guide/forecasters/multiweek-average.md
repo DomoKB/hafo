@@ -14,6 +14,11 @@ A separate helper can coexist with Historical Shift for the same source entity.
 The original helper keeps its existing identity, settings and forecast. Changing
 settings on the new helper preserves its identity and source.
 
+To switch an existing helper, open its **Configure** options and change
+**Forecast strategy**. Submit to display the new strategy's settings, then submit
+again to apply them. This preserves the entity ID, history and existing consumers.
+The previous Historical Shift interval is retained when switching back.
+
 At least three different local dates are required in a comparable hour bucket.
 Otherwise the method uses the known hour one week earlier. If that is also
 missing, the point is absent; missing consumption is never replaced by zero.

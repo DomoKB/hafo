@@ -234,3 +234,63 @@ async def test_multiweek_step_requires_selected_source(config_flow: HafoConfigFl
     """An out-of-order flow has no source and cannot create a broken helper."""
     result = await config_flow.async_step_multiweek()
     assert result.get("reason") == "source_missing"
+
+
+async def test_existing_helper_can_switch_strategy_without_changing_identity(hass: HomeAssistant) -> None:
+    """Switching is staged until new settings are saved; entity identity is stable."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Existing Load",
+        unique_id="hafo_sensor.test_power",
+        data={
+            CONF_SOURCE_ENTITY: "sensor.test_power",
+            CONF_FORECAST_TYPE: FORECAST_TYPE_HISTORICAL_SHIFT,
+            CONF_HISTORY_DAYS: 7,
+        },
+        options={CONF_HISTORY_DAYS: 14},
+    )
+    entry.add_to_hass(hass)
+    original_id = entry.entry_id
+    flow = HafoOptionsFlow()
+    flow.hass = hass
+    flow.handler = entry.entry_id
+    pending = await flow.async_step_init({CONF_FORECAST_TYPE: "multiweek_average", CONF_HISTORY_DAYS: 14})
+    assert pending.get("type") == FlowResultType.FORM
+    pending_schema = pending.get("data_schema")
+    assert pending_schema is not None
+    assert "history_weeks" in pending_schema.schema
+    assert entry.options == {CONF_HISTORY_DAYS: 14}
+    settings = {"history_weeks": 4, "forecast_days": 7, "day_grouping": "weekday_weekend"}
+    saved = await flow.async_step_init(settings)
+    assert saved.get("type") == FlowResultType.CREATE_ENTRY
+    saved_options = saved.get("data")
+    assert saved_options is not None
+    hass.config_entries.async_update_entry(entry, options=saved_options)
+    forecaster = create_forecaster(hass, entry)
+    assert type(forecaster).__name__ == "MultiweekAverageForecaster"
+    assert forecaster.history_days == 28
+    assert entry.entry_id == original_id
+    assert entry.unique_id == "hafo_sensor.test_power"
+    assert entry.title == "Existing Load"
+    assert entry.data[CONF_SOURCE_ENTITY] == "sensor.test_power"
+
+    # A fresh options flow recognises the override and can restore the old strategy.
+    back = HafoOptionsFlow()
+    back.hass = hass
+    back.handler = entry.entry_id
+    reopened = await back.async_step_init()
+    reopened_schema = reopened.get("data_schema")
+    assert reopened_schema is not None
+    assert "history_weeks" in reopened_schema.schema
+    pending_back = await back.async_step_init({CONF_FORECAST_TYPE: FORECAST_TYPE_HISTORICAL_SHIFT})
+    assert pending_back.get("type") == FlowResultType.FORM
+    back_schema = pending_back.get("data_schema")
+    assert back_schema is not None
+    assert CONF_HISTORY_DAYS in back_schema.schema
+    restored = await back.async_step_init({CONF_HISTORY_DAYS: 14})
+    restored_options = restored.get("data")
+    assert restored_options is not None
+    hass.config_entries.async_update_entry(entry, options=restored_options)
+    assert type(create_forecaster(hass, entry)).__name__ == "HistoricalShiftForecaster"
+    assert create_forecaster(hass, entry).history_days == 14
+    assert entry.entry_id == original_id

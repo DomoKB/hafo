@@ -26,6 +26,19 @@ from .const import (
 )
 
 
+def _forecast_type_selector() -> selector.Selector[selector.SelectSelectorConfig]:
+    """Offer the same strategies for new and existing helpers."""
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=[
+                selector.SelectOptionDict(value=FORECAST_TYPE_HISTORICAL_SHIFT, label="Historical Shift"),
+                selector.SelectOptionDict(value=FORECAST_TYPE_MULTIWEEK_AVERAGE, label="Multiweek Average"),
+            ],
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
+
+
 def _multiweek_schema(settings: Mapping[str, Any]) -> vol.Schema:
     """Show only settings used by the multiweek method."""
     return vol.Schema(
@@ -131,21 +144,7 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
                 vol.Optional(
                     CONF_FORECAST_TYPE,
                     default=DEFAULT_FORECAST_TYPE,
-                ): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=[
-                            selector.SelectOptionDict(
-                                value=FORECAST_TYPE_HISTORICAL_SHIFT,
-                                label="Historical Shift",
-                            ),
-                            selector.SelectOptionDict(
-                                value=FORECAST_TYPE_MULTIWEEK_AVERAGE,
-                                label="Multiweek Average",
-                            ),
-                        ],
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                    )
-                ),
+                ): _forecast_type_selector(),
             }
         )
 
@@ -170,21 +169,36 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
 class HafoOptionsFlow(OptionsFlow):
     """Handle options flow for Home Assistant Forecaster."""
 
+    _pending_forecast_type: str | None = None
+
     async def async_step_init(
         self,
         user_input: dict[str, Any] | None = None,
     ) -> ConfigFlowResult:
         """Handle options flow."""
-        if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
-
         # Get current config
         entry = self.hass.config_entries.async_get_entry(self.handler)  # type: ignore[arg-type]
         if entry is None:
             return self.async_abort(reason="entry_not_found")
 
-        if entry.data.get(CONF_FORECAST_TYPE) == FORECAST_TYPE_MULTIWEEK_AVERAGE:
-            return self.async_show_form(step_id="init", data_schema=_multiweek_schema({**entry.data, **entry.options}))
+        settings = {**entry.data, **entry.options}
+        forecast_type = self._pending_forecast_type or settings.get(CONF_FORECAST_TYPE, DEFAULT_FORECAST_TYPE)
+        if user_input is not None:
+            selected_type = user_input.get(CONF_FORECAST_TYPE, forecast_type)
+            if selected_type != forecast_type:
+                # Show the selected strategy's settings before saving or reloading.
+                self._pending_forecast_type = forecast_type = selected_type
+            else:
+                options = {**entry.options, **user_input}
+                if self._pending_forecast_type is not None:
+                    options[CONF_FORECAST_TYPE] = self._pending_forecast_type
+                return self.async_create_entry(title="", data=options)
+
+        if forecast_type == FORECAST_TYPE_MULTIWEEK_AVERAGE:
+            schema = _multiweek_schema(settings).extend(
+                {vol.Optional(CONF_FORECAST_TYPE, default=forecast_type): _forecast_type_selector()}
+            )
+            return self.async_show_form(step_id="init", data_schema=schema)
 
         # Read from options first (previously saved), fall back to data (initial config)
         current_history_days = entry.options.get(
@@ -193,6 +207,7 @@ class HafoOptionsFlow(OptionsFlow):
 
         schema = vol.Schema(
             {
+                vol.Optional(CONF_FORECAST_TYPE, default=forecast_type): _forecast_type_selector(),
                 vol.Optional(
                     CONF_HISTORY_DAYS,
                     default=current_history_days,

@@ -35,7 +35,7 @@ def create_forecaster(hass: HomeAssistant, entry: ConfigEntry) -> ForecasterCoor
         ValueError: If the forecast type is not recognized
 
     """
-    forecast_type = entry.data.get(CONF_FORECAST_TYPE)
+    forecast_type = entry.options.get(CONF_FORECAST_TYPE, entry.data.get(CONF_FORECAST_TYPE))
 
     if forecast_type not in FORECASTER_TYPES:
         msg = f"Unknown forecast type: {forecast_type}"

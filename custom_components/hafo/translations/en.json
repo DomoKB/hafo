@@ -37,16 +37,18 @@
     "step": {
       "init": {
         "title": "Configure Forecast Helper",
-        "description": "Adjust the forecast settings",
+        "description": "Adjust the forecast settings. Changing strategy opens its settings; submit again to apply. Your existing forecast entity is preserved.",
         "data": {
           "day_grouping": "Day pattern",
           "forecast_days": "Forecast horizon",
+          "forecast_type": "Forecast strategy",
           "history_days": "History days",
           "history_weeks": "History to average"
         },
         "data_description": {
           "day_grouping": "Group working days and weekends together, or learn each weekday separately.",
           "forecast_days": "How many days ahead to forecast.",
+          "forecast_type": "Choose Historical Shift or Multiweek Average for this helper.",
           "history_days": "Number of days of history to fetch and shift forward (1-30)",
           "history_weeks": "Use completed hourly observations from the preceding 2–12 weeks."
         }
