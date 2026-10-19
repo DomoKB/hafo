@@ -90,6 +90,15 @@ or by individual weekday. The new helper can coexist with Historical Shift.
 Incomplete/missing history remains explicit, and DST hours retain real durations.
 See [the method and evaluation notes](docs/user-guide/forecasters/multiweek-average.md).
 
+### Battery SOC
+
+Projects battery state of charge from measured SOC, forecast solar and forecast
+household load, using the battery capacity, reserves, power limits and efficiencies.
+It reads existing HA entities and refreshes every five minutes without controlling
+the battery or calling external APIs. Its scalar state is always the prediction
+one hour ahead, so Recorder can retain comparable forecast history.
+See [configuration, assumptions and migration](docs/user-guide/forecasters/battery-soc.md).
+
 ## 🎯 How It Works
 
 HAFO creates forecast helper sensors that:
@@ -97,7 +106,7 @@ HAFO creates forecast helper sensors that:
 1. **Load Data**: Retrieves data from the configured source
 2. **Apply Forecaster**: Runs the selected forecasting engine
 3. **Generate Output**: Creates forecast points in HAEO-compatible format
-4. **Update Regularly**: Refreshes the forecast hourly
+4. **Update Regularly**: Refreshes historical forecasts hourly and Battery SOC every five minutes
 
 ### Example Use Cases
 

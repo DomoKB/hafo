@@ -19,6 +19,7 @@ from .const import (
     CONF_SOURCE_UNIT,
 )
 from .coordinator import ForecasterCoordinator
+from .forecasters.battery_soc import BatterySocForecaster, BatterySocForecastResult
 from .forecasters.historical_shift import ForecastResult
 
 _LOGGER = logging.getLogger(__name__)
@@ -57,11 +58,17 @@ class HafoForecastSensor(CoordinatorEntity[ForecasterCoordinator], SensorEntity)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_forecast"
         self._attr_name = f"{coordinator.entry.title} Forecast"
         self._attr_icon = "mdi:crystal-ball"
+        if isinstance(coordinator, BatterySocForecaster):
+            self._attr_icon = "mdi:battery-clock"
+            self._attr_native_unit_of_measurement = "%"
+            self._attr_device_class = SensorDeviceClass.BATTERY
+            self._attr_suggested_display_precision = 1
 
         self._source_entity = coordinator.source_entity
 
         # Load stored unit/device_class from config entry (survives restarts)
-        self._load_stored_source_attributes()
+        if not isinstance(coordinator, BatterySocForecaster):
+            self._load_stored_source_attributes()
 
         # Try to update from source entity if available
         self._update_from_source_entity()
@@ -79,6 +86,8 @@ class HafoForecastSensor(CoordinatorEntity[ForecasterCoordinator], SensorEntity)
 
     def _update_from_source_entity(self) -> None:
         """Update sensor attributes from the source entity and persist them."""
+        if isinstance(self.coordinator, BatterySocForecaster):
+            return
         source_state = self.coordinator.hass.states.get(self._source_entity)
         if not source_state:
             return
@@ -111,6 +120,8 @@ class HafoForecastSensor(CoordinatorEntity[ForecasterCoordinator], SensorEntity)
     def native_value(self) -> float | None:  # type: ignore[override]
         """Return the current forecast value (first point in forecast)."""
         result = self.coordinator.data
+        if isinstance(result, BatterySocForecastResult):
+            return result.predicted_value
         if result is None or not result.forecast:
             return None
 
@@ -138,6 +149,8 @@ class HafoForecastSensor(CoordinatorEntity[ForecasterCoordinator], SensorEntity)
         }
 
         if result is not None:
+            if isinstance(result, BatterySocForecastResult):
+                attrs.update(result.attributes)
             attrs[ATTR_LAST_UPDATED] = result.generated_at.isoformat()
             attrs[ATTR_FORECAST] = self._format_forecast(result)
 

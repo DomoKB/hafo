@@ -45,11 +45,16 @@ becomes the forecast for next Monday 2pm.
 
 ### Forecast Type
 
-Currently, HAFO supports one forecasting algorithm:
+HAFO supports three forecasting algorithms:
 
 - **Historical Shift** - Shifts historical data forward by N days
+- **Multiweek Average** - Averages comparable local hours across several weeks
+- **Battery SOC** - Integrates solar and household-load forecasts from measured battery charge
 
-More forecasting algorithms may be added in future releases.
+Battery SOC opens a second form for forecast sources, battery limits, reserves
+and efficiencies. See [its configuration and migration guide](forecasters/battery-soc.md).
+Its source must be measured battery SOC in percent; History Days does not apply.
+Create a separate helper when switching between SOC and a historical strategy.
 
 ## Modifying Settings
 

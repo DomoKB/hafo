@@ -132,6 +132,7 @@ nav:
           - user-guide/forecasters/index.md
           - Historical Shift: user-guide/forecasters/historical-shift.md
           - Multiweek Average: user-guide/forecasters/multiweek-average.md
+          - Battery SOC: user-guide/forecasters/battery-soc.md
       - Troubleshooting: user-guide/troubleshooting.md
       - Removal: user-guide/removal.md
 

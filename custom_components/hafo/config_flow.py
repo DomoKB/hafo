@@ -8,6 +8,8 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 import voluptuous as vol
 
+from .battery_soc_config import soc_schema, validate_soc_input
+from .battery_soc_migration import LEGACY_DOMAIN, MIGRATION_SOURCE
 from .const import (
     CONF_DAY_GROUPING,
     CONF_FORECAST_DAYS,
@@ -21,20 +23,25 @@ from .const import (
     DEFAULT_HISTORY_DAYS,
     DEFAULT_HISTORY_WEEKS,
     DOMAIN,
+    FORECAST_TYPE_BATTERY_SOC,
     FORECAST_TYPE_HISTORICAL_SHIFT,
     FORECAST_TYPE_MULTIWEEK_AVERAGE,
 )
+from .forecasters.battery_soc_settings import SOC_DEFAULTS
 from .forecasters.multiweek_profile import MIN_SAMPLES
 
 
-def _forecast_type_selector() -> selector.Selector[selector.SelectSelectorConfig]:
+def _forecast_type_selector(*, include_soc: bool = True) -> selector.Selector[selector.SelectSelectorConfig]:
     """Offer the same strategies for new and existing helpers."""
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
             options=[
                 selector.SelectOptionDict(value=FORECAST_TYPE_HISTORICAL_SHIFT, label="Historical Shift"),
                 selector.SelectOptionDict(value=FORECAST_TYPE_MULTIWEEK_AVERAGE, label="Multiweek Average"),
-            ],
+            ]
+            + (
+                [selector.SelectOptionDict(value=FORECAST_TYPE_BATTERY_SOC, label="Battery SOC")] if include_soc else []
+            ),
             mode=selector.SelectSelectorMode.DROPDOWN,
         )
     )
@@ -111,6 +118,9 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
         super().__init__()
         self._multiweek_data: dict[str, Any] = {}
         self._multiweek_title = ""
+        self._soc_data: dict[str, Any] = {}
+        self._soc_title = ""
+        self._soc_legacy_id: str | None = None
 
     @staticmethod
     @callback
@@ -133,27 +143,57 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 # Create unique ID from source entity
                 forecast_type = user_input.get(CONF_FORECAST_TYPE, DEFAULT_FORECAST_TYPE)
-                suffix = "_multiweek_average" if forecast_type == FORECAST_TYPE_MULTIWEEK_AVERAGE else ""
-                await self.async_set_unique_id(f"{DOMAIN}_{source_entity}{suffix}")
-                self._abort_if_unique_id_configured()
+                if forecast_type == FORECAST_TYPE_BATTERY_SOC:
+                    state = self.hass.states.get(source_entity)
+                    if state is None or state.attributes.get("unit_of_measurement") != "%":
+                        errors[CONF_SOURCE_ENTITY] = "soc_unit_required"
+                    else:
+                        await self.async_set_unique_id(f"{DOMAIN}_{source_entity}_battery_soc")
+                        self._abort_if_unique_id_configured()
+                        self._soc_data = {CONF_SOURCE_ENTITY: source_entity, CONF_FORECAST_TYPE: forecast_type}
+                        self._soc_title = str(state.attributes.get("friendly_name", source_entity))
+                        legacy = [
+                            entry
+                            for entry in self.hass.config_entries.async_entries(LEGACY_DOMAIN)
+                            if {**entry.data, **entry.options}.get("soc_entity") == source_entity
+                        ]
+                        if len(legacy) == 1:
+                            self._soc_legacy_id = legacy[0].entry_id
+                            old = {**legacy[0].data, **legacy[0].options}
+                            self._soc_data.update({key: old[key] for key in SOC_DEFAULTS if key in old})
+                        return await self.async_step_battery_soc()
+                else:
+                    return await self._async_create_historical(user_input, source_entity, forecast_type)
 
-                # Create a friendly title from the source entity
-                state = self.hass.states.get(source_entity)
-                friendly_name = state.attributes.get("friendly_name", source_entity) if state else source_entity
-                title = friendly_name
+        return self.async_show_form(step_id="user", data_schema=self._user_schema(), errors=errors)
 
-                if forecast_type == FORECAST_TYPE_MULTIWEEK_AVERAGE:
-                    self._multiweek_data = {CONF_SOURCE_ENTITY: source_entity, CONF_FORECAST_TYPE: forecast_type}
-                    self._multiweek_title = f"{title} Multiweek Average"
-                    return await self.async_step_multiweek()
+    async def _async_create_historical(
+        self, user_input: dict[str, Any], source_entity: str, forecast_type: str
+    ) -> ConfigFlowResult:
+        """Continue the existing history-based helper creation path."""
+        suffix = "_multiweek_average" if forecast_type == FORECAST_TYPE_MULTIWEEK_AVERAGE else ""
+        await self.async_set_unique_id(f"{DOMAIN}_{source_entity}{suffix}")
+        self._abort_if_unique_id_configured()
 
-                return self.async_create_entry(
-                    title=title,
-                    data=user_input,
-                )
+        # Create a friendly title from the source entity
+        state = self.hass.states.get(source_entity)
+        friendly_name = state.attributes.get("friendly_name", source_entity) if state else source_entity
+        title = friendly_name
 
-        # Build the schema for user input
-        schema = vol.Schema(
+        if forecast_type == FORECAST_TYPE_MULTIWEEK_AVERAGE:
+            self._multiweek_data = {CONF_SOURCE_ENTITY: source_entity, CONF_FORECAST_TYPE: forecast_type}
+            self._multiweek_title = f"{title} Multiweek Average"
+            return await self.async_step_multiweek()
+
+        return self.async_create_entry(
+            title=title,
+            data=user_input,
+        )
+
+    @staticmethod
+    def _user_schema() -> vol.Schema:
+        """Build the initial source/type form."""
+        return vol.Schema(
             {
                 vol.Required(CONF_SOURCE_ENTITY): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain=["sensor", "input_number"])
@@ -177,9 +217,26 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
             }
         )
 
+    async def async_step_battery_soc(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Configure a separate SOC helper and optionally retain its old identity."""
+        if not self._soc_data:
+            return self.async_abort(reason="source_missing")
+        settings = {
+            **SOC_DEFAULTS,
+            **self._soc_data,
+            **(user_input or {}),
+            CONF_SOURCE_ENTITY: self._soc_data[CONF_SOURCE_ENTITY],
+            CONF_FORECAST_TYPE: FORECAST_TYPE_BATTERY_SOC,
+        }
+        errors = validate_soc_input(self.hass, settings) if user_input is not None else {}
+        if user_input is not None and not errors:
+            settings.pop("migrate_existing", None)
+            if self._soc_legacy_id and user_input.get("migrate_existing", True):
+                settings[MIGRATION_SOURCE] = self._soc_legacy_id
+            return self.async_create_entry(title=self._soc_title, data=settings)
         return self.async_show_form(
-            step_id="user",
-            data_schema=schema,
+            step_id="battery_soc",
+            data_schema=soc_schema(settings, migration=bool(self._soc_legacy_id)),
             errors=errors,
         )
 
@@ -214,8 +271,31 @@ class HafoOptionsFlow(OptionsFlow):
         settings = {**entry.data, **entry.options}
         errors: dict[str, str] = {}
         forecast_type = self._pending_forecast_type or settings.get(CONF_FORECAST_TYPE, DEFAULT_FORECAST_TYPE)
+        if forecast_type == FORECAST_TYPE_BATTERY_SOC:
+            if user_input is not None:
+                settings.update(user_input)
+                errors = validate_soc_input(self.hass, settings)
+                if settings.get(CONF_FORECAST_TYPE) != FORECAST_TYPE_BATTERY_SOC:
+                    errors[CONF_FORECAST_TYPE] = "new_helper_required"
+                if settings.get(CONF_SOURCE_ENTITY) != entry.data[CONF_SOURCE_ENTITY]:
+                    errors[CONF_SOURCE_ENTITY] = "new_helper_required"
+                if not errors:
+                    return self.async_create_entry(title="", data={**entry.options, **user_input})
+            return self.async_show_form(step_id="init", data_schema=soc_schema(settings), errors=errors)
         if user_input is not None:
             selected_type = user_input.get(CONF_FORECAST_TYPE, forecast_type)
+            if selected_type == FORECAST_TYPE_BATTERY_SOC:
+                return self.async_show_form(
+                    step_id="init",
+                    data_schema=_multiweek_schema(settings).extend(
+                        {
+                            vol.Optional(CONF_FORECAST_TYPE, default=forecast_type): _forecast_type_selector(
+                                include_soc=False
+                            )
+                        }
+                    ),
+                    errors={CONF_FORECAST_TYPE: "new_helper_required"},
+                )
             if selected_type != forecast_type:
                 # Show the selected strategy's settings before saving or reloading.
                 self._pending_forecast_type = forecast_type = selected_type
@@ -231,7 +311,7 @@ class HafoOptionsFlow(OptionsFlow):
 
         if forecast_type == FORECAST_TYPE_MULTIWEEK_AVERAGE:
             schema = _multiweek_schema(settings).extend(
-                {vol.Optional(CONF_FORECAST_TYPE, default=forecast_type): _forecast_type_selector()}
+                {vol.Optional(CONF_FORECAST_TYPE, default=forecast_type): _forecast_type_selector(include_soc=False)}
             )
             return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
 
@@ -242,7 +322,7 @@ class HafoOptionsFlow(OptionsFlow):
 
         schema = vol.Schema(
             {
-                vol.Optional(CONF_FORECAST_TYPE, default=forecast_type): _forecast_type_selector(),
+                vol.Optional(CONF_FORECAST_TYPE, default=forecast_type): _forecast_type_selector(include_soc=False),
                 vol.Optional(
                     CONF_HISTORY_DAYS,
                     default=current_history_days,

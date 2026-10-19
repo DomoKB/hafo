@@ -19,6 +19,7 @@ CONF_SOURCE_DEVICE_CLASS: Final = "source_device_class"
 # Forecast types
 FORECAST_TYPE_HISTORICAL_SHIFT: Final = "historical_shift"
 FORECAST_TYPE_MULTIWEEK_AVERAGE: Final = "multiweek_average"
+FORECAST_TYPE_BATTERY_SOC: Final = "battery_soc"
 
 # Default values
 DEFAULT_HISTORY_DAYS: Final = 7

@@ -1,11 +1,13 @@
 """The Home Assistant Forecaster integration."""
 
+import asyncio
 import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
+from .battery_soc_migration import async_finish_soc_migration, async_prepare_soc_migration, async_rollback_soc_migration
 from .coordinator import ForecasterCoordinator, create_forecaster
 
 _LOGGER = logging.getLogger(__name__)
@@ -19,15 +21,38 @@ async def async_setup_entry(hass: HomeAssistant, entry: HafoConfigEntry) -> bool
     """Set up Home Assistant Forecaster from a config entry."""
     _LOGGER.info("Setting up forecaster: %s", entry.title)
 
-    # Create the forecaster coordinator based on configuration
-    coordinator = create_forecaster(hass, entry)
-    entry.runtime_data = coordinator
-
-    # Perform initial data fetch
-    await coordinator.async_config_entry_first_refresh()
-
-    # Set up platforms
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    migration = await async_prepare_soc_migration(hass, entry)
+    coordinator = None
+    platforms_started = False
+    try:
+        coordinator = create_forecaster(hass, entry)
+        entry.runtime_data = coordinator
+        await coordinator.async_config_entry_first_refresh()
+        platforms_started = True
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        await async_finish_soc_migration(hass, entry)
+    except (asyncio.CancelledError, Exception):
+        # Platform forwarding can swallow sensor-add errors. Unload any partial
+        # replacement before returning ownership to the original writer.
+        if platforms_started:
+            try:
+                if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+                    _LOGGER.exception("Could not unload the incomplete forecast sensor for %s", entry.entry_id)
+            except (asyncio.CancelledError, Exception):
+                _LOGGER.exception("Could not clean up the incomplete forecast platform for %s", entry.entry_id)
+        if coordinator is not None:
+            try:
+                coordinator.cleanup()
+            except Exception:
+                _LOGGER.exception("Could not clean up the incomplete forecaster for %s", entry.entry_id)
+        if migration is not None:
+            try:
+                await async_rollback_soc_migration(hass, migration)
+            except (asyncio.CancelledError, Exception):
+                # The migration API refuses a transfer while an entity is still
+                # loaded. Keep the old writer disabled if platform unload failed.
+                _LOGGER.exception("Could not restore the standalone SOC helper for %s", entry.entry_id)
+        raise
 
     # Register update listener for config changes
     entry.async_on_unload(entry.add_update_listener(async_update_listener))

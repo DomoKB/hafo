@@ -1,0 +1,800 @@
+[
+  {
+    "expected": {
+      "complete": true,
+      "coveredUntil": 7200000,
+      "energy": {
+        "chargeAcKwh": 0,
+        "dischargeAcKwh": 2,
+        "dischargeOverheadKwh": 0.4,
+        "exportKwh": 0,
+        "gridImportKwh": 0,
+        "loadKwh": 2,
+        "solarKwh": 0,
+        "storedChangeKwh": -2.5052631578947366
+      },
+      "issues": [],
+      "points": [
+        [0, 40],
+        [7200000, 14.947368421052634]
+      ]
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": 40,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 0,
+      "solar": [
+        {
+          "end": 7200000,
+          "kw": 0,
+          "start": 0
+        }
+      ]
+    },
+    "name": "normal_discharge"
+  },
+  {
+    "expected": {
+      "complete": true,
+      "coveredUntil": 7200000,
+      "energy": {
+        "chargeAcKwh": 0,
+        "dischargeAcKwh": 2,
+        "dischargeOverheadKwh": 0,
+        "exportKwh": 0,
+        "gridImportKwh": 0,
+        "loadKwh": 2,
+        "solarKwh": 0,
+        "storedChangeKwh": -2.1052631578947367
+      },
+      "issues": [],
+      "points": [
+        [0, 40],
+        [7200000, 18.947368421052634]
+      ]
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0,
+      "end": 7200000,
+      "initialSoc": 40,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 0,
+      "solar": [
+        {
+          "end": 7200000,
+          "kw": 0,
+          "start": 0
+        }
+      ]
+    },
+    "name": "zero_overhead"
+  },
+  {
+    "expected": {
+      "complete": true,
+      "coveredUntil": 7200000,
+      "energy": {
+        "chargeAcKwh": 0,
+        "dischargeAcKwh": 0.39915966386554624,
+        "dischargeOverheadKwh": 0.07983193277310925,
+        "exportKwh": 0,
+        "gridImportKwh": 1.6008403361344539,
+        "loadKwh": 2,
+        "solarKwh": 0,
+        "storedChangeKwh": -0.5
+      },
+      "issues": [],
+      "points": [
+        [0, 10],
+        [1436974.7899159666, 5],
+        [7200000, 5]
+      ]
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": 10,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 5,
+      "now": 0,
+      "solar": [
+        {
+          "end": 7200000,
+          "kw": 0,
+          "start": 0
+        }
+      ]
+    },
+    "name": "reserve"
+  },
+  {
+    "expected": {
+      "complete": true,
+      "coveredUntil": 7200000,
+      "energy": {
+        "chargeAcKwh": 6,
+        "dischargeAcKwh": 0,
+        "dischargeOverheadKwh": 0,
+        "exportKwh": 0,
+        "gridImportKwh": 0,
+        "loadKwh": 2,
+        "solarKwh": 8,
+        "storedChangeKwh": 5.699999999999999
+      },
+      "issues": [],
+      "points": [
+        [0, 40],
+        [7200000, 97]
+      ]
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": 40,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 0,
+      "solar": [
+        {
+          "end": 7200000,
+          "kw": 4,
+          "start": 0
+        }
+      ]
+    },
+    "name": "charging"
+  },
+  {
+    "expected": {
+      "complete": true,
+      "coveredUntil": 7200000,
+      "energy": {
+        "chargeAcKwh": 0,
+        "dischargeAcKwh": 0,
+        "dischargeOverheadKwh": 0,
+        "exportKwh": 0,
+        "gridImportKwh": 0,
+        "loadKwh": 2,
+        "solarKwh": 2,
+        "storedChangeKwh": 0
+      },
+      "issues": [],
+      "points": [
+        [0, 40],
+        [7200000, 40]
+      ]
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": 40,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 0,
+      "solar": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ]
+    },
+    "name": "idle"
+  },
+  {
+    "expected": {
+      "complete": true,
+      "coveredUntil": 7200000,
+      "energy": {
+        "chargeAcKwh": 0,
+        "dischargeAcKwh": 0,
+        "dischargeOverheadKwh": 0,
+        "exportKwh": 0,
+        "gridImportKwh": 2,
+        "loadKwh": 2,
+        "solarKwh": 0,
+        "storedChangeKwh": 0
+      },
+      "issues": [],
+      "points": [
+        [0, 40],
+        [7200000, 40]
+      ]
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": 40,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 0,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 0,
+      "solar": [
+        {
+          "end": 7200000,
+          "kw": 0,
+          "start": 0
+        }
+      ]
+    },
+    "name": "discharge_disabled"
+  },
+  {
+    "expected": {
+      "complete": true,
+      "coveredUntil": 7200000,
+      "energy": {
+        "chargeAcKwh": 0,
+        "dischargeAcKwh": 0,
+        "dischargeOverheadKwh": 0,
+        "exportKwh": 6,
+        "gridImportKwh": 0,
+        "loadKwh": 2,
+        "solarKwh": 8,
+        "storedChangeKwh": 0
+      },
+      "issues": [],
+      "points": [
+        [0, 40],
+        [7200000, 40]
+      ]
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": 40,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 0,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 0,
+      "solar": [
+        {
+          "end": 7200000,
+          "kw": 4,
+          "start": 0
+        }
+      ]
+    },
+    "name": "charge_disabled"
+  },
+  {
+    "expected": {
+      "complete": true,
+      "coveredUntil": 7200000,
+      "energy": {
+        "chargeAcKwh": 0,
+        "dischargeAcKwh": 0,
+        "dischargeOverheadKwh": 0,
+        "exportKwh": 0,
+        "gridImportKwh": 2,
+        "loadKwh": 2,
+        "solarKwh": 0,
+        "storedChangeKwh": 0
+      },
+      "issues": [],
+      "points": [
+        [0, 3],
+        [7200000, 3]
+      ]
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": 3,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 5,
+      "now": 0,
+      "solar": [
+        {
+          "end": 7200000,
+          "kw": 0,
+          "start": 0
+        }
+      ]
+    },
+    "name": "initial_below_reserve"
+  },
+  {
+    "expected": {
+      "complete": true,
+      "coveredUntil": 7200000,
+      "energy": {
+        "chargeAcKwh": 0.21052631578947295,
+        "dischargeAcKwh": 0,
+        "dischargeOverheadKwh": 0,
+        "exportKwh": 5.789473684210527,
+        "gridImportKwh": 0,
+        "loadKwh": 2,
+        "solarKwh": 8,
+        "storedChangeKwh": 0.1999999999999993
+      },
+      "issues": [],
+      "points": [
+        [0, 98],
+        [252631.57894736755, 100],
+        [7200000, 100]
+      ]
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": 98,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 0,
+      "solar": [
+        {
+          "end": 7200000,
+          "kw": 4,
+          "start": 0
+        }
+      ]
+    },
+    "name": "upper_crossing"
+  },
+  {
+    "expected": {
+      "complete": true,
+      "coveredUntil": 7200000,
+      "energy": {
+        "chargeAcKwh": 1,
+        "dischargeAcKwh": 1.25,
+        "dischargeOverheadKwh": 0.25,
+        "exportKwh": 0,
+        "gridImportKwh": 0,
+        "loadKwh": 1.75,
+        "solarKwh": 1.5,
+        "storedChangeKwh": -0.6157894736842104
+      },
+      "issues": [],
+      "points": [
+        [900000, 40],
+        [1800000, 36.868421052631575],
+        [3600000, 46.36842105263158],
+        [7200000, 33.8421052631579]
+      ]
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": 40,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 900000,
+      "solar": [
+        {
+          "end": 1800000,
+          "kw": 0,
+          "start": 0
+        },
+        {
+          "end": 3600000,
+          "kw": 3,
+          "start": 1800000
+        },
+        {
+          "end": 7200000,
+          "kw": 0,
+          "start": 3600000
+        }
+      ]
+    },
+    "name": "partial_hour"
+  },
+  {
+    "expected": {
+      "complete": false,
+      "coveredUntil": 1800000,
+      "energy": {
+        "chargeAcKwh": 0,
+        "dischargeAcKwh": 0.5,
+        "dischargeOverheadKwh": 0.1,
+        "exportKwh": 0,
+        "gridImportKwh": 0,
+        "loadKwh": 0.5,
+        "solarKwh": 0,
+        "storedChangeKwh": -0.6263157894736842
+      },
+      "issues": ["Solar forecast has a gap; SOC estimation stops at the gap."],
+      "points": [
+        [0, 40],
+        [1800000, 33.73684210526316]
+      ]
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": 40,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 0,
+      "solar": [
+        {
+          "end": 1800000,
+          "kw": 0,
+          "start": 0
+        },
+        {
+          "end": 7200000,
+          "kw": 0,
+          "start": 3600000
+        }
+      ]
+    },
+    "name": "gap"
+  },
+  {
+    "expected": {
+      "complete": false,
+      "coveredUntil": 1800000,
+      "energy": {
+        "chargeAcKwh": 0,
+        "dischargeAcKwh": 0.5,
+        "dischargeOverheadKwh": 0.1,
+        "exportKwh": 0,
+        "gridImportKwh": 0,
+        "loadKwh": 0.5,
+        "solarKwh": 0,
+        "storedChangeKwh": -0.6263157894736842
+      },
+      "issues": ["Solar forecast contains overlapping intervals; SOC estimation stops before the overlap."],
+      "points": [
+        [0, 40],
+        [1800000, 33.73684210526316]
+      ]
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": 40,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 0,
+      "solar": [
+        {
+          "end": 3600000,
+          "kw": 0,
+          "start": 0
+        },
+        {
+          "end": 7200000,
+          "kw": 3,
+          "start": 1800000
+        }
+      ]
+    },
+    "name": "overlap"
+  },
+  {
+    "expected": {
+      "complete": false,
+      "coveredUntil": null,
+      "energy": {
+        "chargeAcKwh": 0,
+        "dischargeAcKwh": 0,
+        "dischargeOverheadKwh": 0,
+        "exportKwh": 0,
+        "gridImportKwh": 0,
+        "loadKwh": 0,
+        "solarKwh": 0,
+        "storedChangeKwh": 0
+      },
+      "issues": ["Load forecast is unavailable."],
+      "points": []
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": 40,
+      "load": [],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 0,
+      "solar": [
+        {
+          "end": 7200000,
+          "kw": 0,
+          "start": 0
+        }
+      ]
+    },
+    "name": "missing_load"
+  },
+  {
+    "expected": {
+      "complete": false,
+      "coveredUntil": null,
+      "energy": {
+        "chargeAcKwh": 0,
+        "dischargeAcKwh": 0,
+        "dischargeOverheadKwh": 0,
+        "exportKwh": 0,
+        "gridImportKwh": 0,
+        "loadKwh": 0,
+        "solarKwh": 0,
+        "storedChangeKwh": 0
+      },
+      "issues": ["SOC forecast requires a non-negative discharge overhead in kW."],
+      "points": []
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": -0.1,
+      "end": 7200000,
+      "initialSoc": 40,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 0,
+      "solar": [
+        {
+          "end": 7200000,
+          "kw": 0,
+          "start": 0
+        }
+      ]
+    },
+    "name": "bad_overhead"
+  },
+  {
+    "expected": {
+      "complete": false,
+      "coveredUntil": null,
+      "energy": {
+        "chargeAcKwh": 0,
+        "dischargeAcKwh": 0,
+        "dischargeOverheadKwh": 0,
+        "exportKwh": 0,
+        "gridImportKwh": 0,
+        "loadKwh": 0,
+        "solarKwh": 0,
+        "storedChangeKwh": 0
+      },
+      "issues": ["SOC forecast requires a current battery SOC from 0 to 100%."],
+      "points": []
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": null,
+      "load": [
+        {
+          "end": 7200000,
+          "kw": 1,
+          "start": 0
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 0,
+      "solar": [
+        {
+          "end": 7200000,
+          "kw": 0,
+          "start": 0
+        }
+      ]
+    },
+    "name": "bad_soc"
+  },
+  {
+    "expected": {
+      "complete": false,
+      "coveredUntil": 3600000,
+      "energy": {
+        "chargeAcKwh": 0,
+        "dischargeAcKwh": 1,
+        "dischargeOverheadKwh": 0.2,
+        "exportKwh": 0,
+        "gridImportKwh": 0,
+        "loadKwh": 1,
+        "solarKwh": 0,
+        "storedChangeKwh": -1.2526315789473683
+      },
+      "issues": ["Load forecast contains an invalid power value."],
+      "points": [
+        [0, 40],
+        [3600000, 27.473684210526315]
+      ]
+    },
+    "input": {
+      "capacityKwh": 10,
+      "chargeEfficiency": 0.95,
+      "dischargeEfficiency": 0.95,
+      "dischargeOverheadKw": 0.2,
+      "end": 7200000,
+      "initialSoc": 40,
+      "load": [
+        {
+          "end": 3600000,
+          "kw": 1,
+          "start": 0
+        },
+        {
+          "end": 7200000,
+          "kw": null,
+          "start": 3600000
+        }
+      ],
+      "maxChargeKw": 5,
+      "maxDischargeKw": 5,
+      "maxSoc": 100,
+      "minSoc": 0,
+      "now": 0,
+      "solar": [
+        {
+          "end": 7200000,
+          "kw": 0,
+          "start": 0
+        }
+      ]
+    },
+    "name": "unknown_middle"
+  }
+]

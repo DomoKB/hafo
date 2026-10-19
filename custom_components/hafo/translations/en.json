@@ -4,12 +4,47 @@
     "step": {
       "user": {
         "title": "Create Forecast Helper",
-        "description": "Create a forecast sensor from recorded history. Multiweek Average opens its own settings next.",
+        "description": "Create a forecast helper. For Battery SOC select the measured battery percentage; its solar, load and battery settings follow. History days applies to Historical Shift.",
         "data": { "forecast_type": "Forecast type", "history_days": "History days", "source_entity": "Source entity" },
         "data_description": {
           "forecast_type": "The forecasting algorithm to use",
           "history_days": "Number of days of history to fetch and shift forward (1-30)",
           "source_entity": "The sensor entity to generate a forecast for"
+        }
+      },
+      "battery_soc": {
+        "title": "Configure Battery SOC",
+        "description": "Forecast household self-consumption from existing HA entities. Runs in the background every five minutes and when core inputs change. Records the prediction one hour ahead for comparison. Optional migration preserves the old sensor and its history, then removes the standalone helper. Amber/VPP dispatch is not predicted.",
+        "data": {
+          "backup_soc_entity": "Backup SOC sensor (optional)",
+          "capacity_entity": "Battery capacity sensor",
+          "capacity_kwh": "Battery capacity override (kWh, optional)",
+          "charge_efficiency": "Charging gain (fraction)",
+          "charge_power_entity": "Maximum charging power sensor",
+          "discharge_efficiency": "Discharge efficiency (fraction)",
+          "discharge_overhead_kw": "Additional battery drain while discharging (kW)",
+          "discharge_power_entity": "Maximum discharging power sensor",
+          "forecast_hours": "Forecast horizon (hours)",
+          "grid_status_entity": "Grid connection status (optional)",
+          "load_forecast_entity": "Load forecast (HAFO)",
+          "load_power_entity": "Current household load (optional)",
+          "max_charge_kw": "Charging power override (kW, optional)",
+          "max_discharge_kw": "Discharging power override (kW, optional)",
+          "max_soc": "Maximum SOC (%)",
+          "migrate_existing": "Migrate existing SOC helper and retain its history",
+          "min_soc": "Minimum SOC override (optional)",
+          "min_soc_entity": "Discharge cut-off SOC sensor (optional)",
+          "solar_entity": "Solar forecast (Solcast detailedForecast)",
+          "solar_forecast_factor": "Solar calibration factor (1 = unchanged)",
+          "solar_tomorrow_entity": "Solar forecast tomorrow (optional)"
+        },
+        "data_description": {
+          "capacity_entity": "Choose a native capacity sensor, or set the capacity override below.",
+          "charge_efficiency": "Effective stored-energy/SOC gain from available solar surplus. Calibrate for your battery.",
+          "charge_power_entity": "Choose a native charging rating, or set the charging override below.",
+          "discharge_overhead_kw": "Additional battery-side consumption while supplying load; defaults to zero.",
+          "discharge_power_entity": "Choose a native discharging rating, or set the discharging override below.",
+          "solar_forecast_factor": "Site-specific correction applied only inside this SOC forecast. Provider entities are not modified."
         }
       },
       "multiweek": {
@@ -29,6 +64,13 @@
     },
     "error": {
       "entity_not_found": "The selected entity was not found",
+      "entity_or_value_required": "Select a sensor or enter the corresponding numeric override.",
+      "entity_required": "Select the required forecast entity.",
+      "invalid_number": "Enter a finite number within the displayed range.",
+      "invalid_reserve": "Minimum SOC must not exceed maximum SOC.",
+      "measured_soc_required": "Select measured battery SOC, not another SOC forecast.",
+      "new_helper_required": "Create a separate Battery SOC helper to preserve this sensor's unit and history.",
+      "soc_unit_required": "Select a measured battery SOC sensor with percent units.",
       "weekday_history_too_short": "Use at least 3 weeks when learning each weekday separately.",
       "whole_number": "Enter a whole number."
     },
@@ -43,22 +85,57 @@
         "title": "Configure Forecast Helper",
         "description": "Adjust the forecast settings. Changing strategy opens its settings; submit again to apply. Your existing forecast entity is preserved.",
         "data": {
+          "backup_soc_entity": "Backup SOC sensor (optional)",
+          "capacity_entity": "Battery capacity sensor",
+          "capacity_kwh": "Battery capacity override (kWh, optional)",
+          "charge_efficiency": "Charging gain (fraction)",
+          "charge_power_entity": "Maximum charging power sensor",
           "day_grouping": "Day pattern",
+          "discharge_efficiency": "Discharge efficiency (fraction)",
+          "discharge_overhead_kw": "Additional battery drain while discharging (kW)",
+          "discharge_power_entity": "Maximum discharging power sensor",
           "forecast_days": "Forecast horizon",
+          "forecast_hours": "Forecast horizon (hours)",
           "forecast_type": "Forecast strategy",
+          "grid_status_entity": "Grid connection status (optional)",
           "history_days": "History days",
-          "history_weeks": "History to average"
+          "history_weeks": "History to average",
+          "load_forecast_entity": "Load forecast (HAFO)",
+          "load_power_entity": "Current household load (optional)",
+          "max_charge_kw": "Charging power override (kW, optional)",
+          "max_discharge_kw": "Discharging power override (kW, optional)",
+          "max_soc": "Maximum SOC (%)",
+          "migrate_existing": "Migrate existing SOC helper and retain its history",
+          "min_soc": "Minimum SOC override (optional)",
+          "min_soc_entity": "Discharge cut-off SOC sensor (optional)",
+          "solar_entity": "Solar forecast (Solcast detailedForecast)",
+          "solar_forecast_factor": "Solar calibration factor (1 = unchanged)",
+          "solar_tomorrow_entity": "Solar forecast tomorrow (optional)"
         },
         "data_description": {
+          "capacity_entity": "Choose a native capacity sensor, or set the capacity override below.",
+          "charge_efficiency": "Effective stored-energy/SOC gain from available solar surplus. Calibrate for your battery.",
+          "charge_power_entity": "Choose a native charging rating, or set the charging override below.",
           "day_grouping": "Group working days and weekends together, or learn each weekday separately (requires at least 3 weeks).",
+          "discharge_overhead_kw": "Additional battery-side consumption while supplying load; defaults to zero.",
+          "discharge_power_entity": "Choose a native discharging rating, or set the discharging override below.",
           "forecast_days": "How many days ahead to forecast.",
           "forecast_type": "Choose Historical Shift or Multiweek Average for this helper.",
           "history_days": "Number of days of history to fetch and shift forward (1-30)",
-          "history_weeks": "Use completed hourly observations from the preceding 2–12 weeks."
+          "history_weeks": "Use completed hourly observations from the preceding 2–12 weeks.",
+          "solar_forecast_factor": "Site-specific correction applied only inside this SOC forecast. Provider entities are not modified."
         }
       }
     },
     "error": {
+      "entity_not_found": "The selected entity was not found",
+      "entity_or_value_required": "Select a sensor or enter the corresponding numeric override.",
+      "entity_required": "Select the required forecast entity.",
+      "invalid_number": "Enter a finite number within the displayed range.",
+      "invalid_reserve": "Minimum SOC must not exceed maximum SOC.",
+      "measured_soc_required": "Select measured battery SOC, not another SOC forecast.",
+      "new_helper_required": "Create a separate Battery SOC helper to preserve this sensor's unit and history.",
+      "soc_unit_required": "Select a measured battery SOC sensor with percent units.",
       "weekday_history_too_short": "Use at least 3 weeks when learning each weekday separately.",
       "whole_number": "Enter a whole number."
     }

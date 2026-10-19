@@ -37,3 +37,9 @@ The forecast is refreshed hourly to incorporate new data.
 [Multiweek Average](multiweek-average.md) estimates a typical hourly profile from
 several weeks of comparable days. It can run alongside Historical Shift for the
 same source, allowing their accuracy to be compared without changing consumers.
+
+## Battery SOC
+
+[Battery SOC](battery-soc.md) combines measured charge, forecast solar and forecast
+household load into a battery charge estimate. It updates in the background every
+five minutes and retains a fixed one-hour-ahead prediction through Recorder.
