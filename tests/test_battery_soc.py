@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
+from freezegun import freeze_time
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.core import HomeAssistant
 import pytest
@@ -184,3 +185,122 @@ async def test_core_input_refreshes_but_live_load_does_not(hass: HomeAssistant) 
         hass.states.async_set("sensor.battery_soc", "48", {"unit_of_measurement": "%"})
         await hass.async_block_till_done()
         refresh.assert_awaited_once()
+
+
+async def test_stale_soc_does_not_create_a_fresh_prediction(hass: HomeAssistant) -> None:
+    """A stalled numeric SOC is unknown, even with complete future forecasts."""
+    reported = NOW - timedelta(hours=2)
+    with freeze_time(reported):
+        for entity, state in soc_states().items():
+            hass.states.async_set(entity, state["state"], state["attributes"])
+    entry = MockConfigEntry(domain=DOMAIN, data=soc_settings())
+    entry.add_to_hass(hass)
+    coordinator = BatterySocForecaster(hass, entry)
+    try:
+        with freeze_time(NOW):
+            result = await coordinator._async_update_data()
+        assert result.predicted_value is None
+        assert result.forecast == []
+        assert result.attributes["forecast"] == []
+        assert result.attributes["source_soc_stale"] is True
+        assert result.attributes["source_soc_reported_at"] == reported.isoformat()
+        assert result.attributes["source_soc_age_seconds"] == 7200
+        assert "last reported 120.0 minutes ago" in result.attributes["forecast_issues"][0]
+        assert result.attributes["prediction_time"] == (NOW + timedelta(hours=1)).isoformat()
+    finally:
+        coordinator.cleanup()
+
+
+async def test_fresh_unchanged_soc_plateau_remains_usable(hass: HomeAssistant) -> None:
+    """Repeated identical reports refresh last_reported, not last_updated."""
+    reported = NOW - timedelta(hours=2)
+    states = soc_states()
+    states["sensor.battery_soc"]["state"] = "100"
+    with freeze_time(reported):
+        for entity, state in states.items():
+            hass.states.async_set(entity, state["state"], state["attributes"])
+    entry = MockConfigEntry(domain=DOMAIN, data=soc_settings())
+    entry.add_to_hass(hass)
+    coordinator = BatterySocForecaster(hass, entry)
+    try:
+        with freeze_time(NOW):
+            hass.states.async_set("sensor.battery_soc", "100", {"unit_of_measurement": "%"})
+            source = hass.states.get("sensor.battery_soc")
+            assert source is not None
+            assert source.last_updated == reported
+            assert source.last_reported == NOW
+            result = await coordinator._async_update_data()
+        assert result.predicted_value == pytest.approx(90)
+        assert result.forecast[0].value == 100
+        assert result.attributes["source_soc_stale"] is False
+        assert result.attributes["source_soc_age_seconds"] == 0
+        assert result.attributes["forecast_issues"] == []
+    finally:
+        coordinator.cleanup()
+
+
+async def test_stale_soc_recovers_on_the_next_poll_after_an_identical_report(hass: HomeAssistant) -> None:
+    """A source recovery does not require a changed SOC to resume predictions."""
+    with freeze_time(NOW - timedelta(hours=2)):
+        for entity, state in soc_states().items():
+            hass.states.async_set(entity, state["state"], state["attributes"])
+    entry = MockConfigEntry(domain=DOMAIN, data=soc_settings())
+    entry.add_to_hass(hass)
+    coordinator = BatterySocForecaster(hass, entry)
+    try:
+        with freeze_time(NOW):
+            stale = await coordinator._async_update_data()
+            assert stale.predicted_value is None
+            hass.states.async_set("sensor.battery_soc", "50", {"unit_of_measurement": "%"})
+            recovered = await coordinator._async_update_data()
+        assert recovered.predicted_value == pytest.approx(40)
+        assert recovered.forecast[0].value == 50
+        assert recovered.attributes["source_soc_stale"] is False
+        assert recovered.attributes["source_soc_reported_at"] == NOW.isoformat()
+        assert recovered.attributes["forecast_issues"] == []
+    finally:
+        coordinator.cleanup()
+
+
+@pytest.mark.parametrize(("age_seconds", "stale"), [(600, False), (600.001, True)])
+async def test_soc_freshness_boundary(hass: HomeAssistant, age_seconds: float, *, stale: bool) -> None:
+    """Exactly ten minutes is accepted; older numeric input is not restamped."""
+    with freeze_time(NOW - timedelta(seconds=age_seconds)):
+        for entity, state in soc_states().items():
+            hass.states.async_set(entity, state["state"], state["attributes"])
+    entry = MockConfigEntry(domain=DOMAIN, data=soc_settings())
+    entry.add_to_hass(hass)
+    coordinator = BatterySocForecaster(hass, entry)
+    try:
+        with freeze_time(NOW):
+            result = await coordinator._async_update_data()
+        assert result.attributes["source_soc_stale"] is stale
+        assert (result.predicted_value is None) is stale
+    finally:
+        coordinator.cleanup()
+
+
+@pytest.mark.parametrize("source_value", ["unknown", "unavailable", None])
+async def test_unavailable_or_missing_soc_keeps_normal_issue_handling(
+    hass: HomeAssistant, source_value: str | None
+) -> None:
+    """Missing/non-numeric readings remain ordinary missing-input failures."""
+    with freeze_time(NOW - timedelta(hours=2)):
+        for entity, state in soc_states().items():
+            if entity == "sensor.battery_soc":
+                if source_value is not None:
+                    hass.states.async_set(entity, source_value, state["attributes"])
+            else:
+                hass.states.async_set(entity, state["state"], state["attributes"])
+    entry = MockConfigEntry(domain=DOMAIN, data=soc_settings())
+    entry.add_to_hass(hass)
+    coordinator = BatterySocForecaster(hass, entry)
+    try:
+        with freeze_time(NOW):
+            result = await coordinator._async_update_data()
+        assert result.predicted_value is None
+        assert result.forecast == []
+        assert result.attributes["source_soc_stale"] is False
+        assert result.attributes["forecast_issues"] == ["SOC forecast requires a current battery SOC from 0 to 100%."]
+    finally:
+        coordinator.cleanup()

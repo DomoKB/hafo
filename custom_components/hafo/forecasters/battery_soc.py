@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
+import math
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -33,6 +34,7 @@ class BatterySocForecaster(DataUpdateCoordinator[ForecastResult | None]):
     """Refresh every five minutes and on changes to the forecast's core inputs."""
 
     UPDATE_INTERVAL = timedelta(minutes=5)
+    MAX_SOURCE_AGE = timedelta(minutes=10)
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Read generic mappings and retain the existing SOC model's behaviour."""
@@ -94,9 +96,30 @@ class BatterySocForecaster(DataUpdateCoordinator[ForecastResult | None]):
         }
         entities.add(self.source_entity)
         states = {entity: self.hass.states.get(entity) for entity in entities}
+        source = states[self.source_entity]
+        # A constant SOC can retain an old last_updated while being reported
+        # normally. Only last_reported distinguishes that plateau from a stalled
+        # integration which leaves an old numeric value in the state machine.
+        source_age = max(0.0, (now - source.last_reported).total_seconds()) if source is not None else None
+        try:
+            numeric_source = source is not None and math.isfinite(float(source.state))
+        except ValueError:
+            numeric_source = False
+        source_stale = numeric_source and source_age is not None and source_age > self.MAX_SOURCE_AGE.total_seconds()
+        if source_stale:
+            states[self.source_entity] = None
         model = build_forecast(states, self.settings, start, start + int(self.settings["forecast_hours"]) * 3_600_000)
         attributes = model["attributes"]
         attributes["forecast_type"] = FORECAST_TYPE_BATTERY_SOC
+        attributes["source_soc_reported_at"] = source.last_reported.isoformat() if source is not None else None
+        attributes["source_soc_age_seconds"] = source_age
+        attributes["source_soc_stale"] = source_stale
+        if source_stale and source_age is not None:
+            attributes["forecast_issues"].insert(
+                0,
+                f"Measured battery SOC was last reported {source_age / 60:.1f} minutes ago; "
+                "forecast paused until a fresh reading is reported.",
+            )
         return BatterySocForecastResult(
             forecast=[
                 ForecastPoint(time=datetime.fromisoformat(p["time"]), value=p["value"]) for p in attributes["forecast"]

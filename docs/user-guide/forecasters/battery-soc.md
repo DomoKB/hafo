@@ -51,9 +51,16 @@ not predicted. This is a self-consumption estimate, not an optimiser's schedule.
 - Unit: percent; device class battery; state class measurement.
 - Attributes: forecast (time/value points), last_forecast_update,
     prediction_time, forecast_lead_hours: 1, model inputs, assumptions, reserves,
-    coverage and explicit issues.
+    coverage and explicit issues. source_soc_reported_at, source_soc_age_seconds
+    and source_soc_stale identify the measured SOC input's freshness.
 - Updates: every five minutes and when core source/configuration values change.
     Changes to instantaneous household load alone do not create high-rate history.
+
+If the measured SOC has not been reported for more than ten minutes, the helper
+pauses its prediction: the scalar becomes unknown, the forward curve is empty,
+and an explicit issue identifies the stale input. A fresh source report resumes
+forecasting. This checks Home Assistant's last_reported timestamp, so an unchanged
+100% or reserve plateau remains valid when the source keeps reporting it.
 
 Recorder stores the one-hour-ahead scalar predictions. Compare them against
 measured SOC at prediction_time, not their issuance time. Full curves describe
